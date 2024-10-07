@@ -120,6 +120,35 @@ func (s *wcaSession) GetVolume() float32 {
 }
 
 func (s *wcaSession) SetVolume(v float32) error {
+	if v == 0 {
+		if err := s.volume.SetMute(true, s.eventCtx); err != nil {
+			s.logger.Warnw("Failed to set session mute",
+				"error", err,
+				"volume", 0)
+
+			return fmt.Errorf("adjust session, can't mute: %w", err)
+		}
+
+		return nil
+	} else {
+		var isMuted bool
+
+		if err := s.volume.GetMute(&isMuted); err != nil {
+			s.logger.Warnw("Can't resolve get mute")
+
+			return fmt.Errorf("adjust session, can't get mute: %w", err)
+		}
+
+		if isMuted {
+			if err := s.volume.SetMute(false, s.eventCtx); err != nil {
+				s.logger.Warnw("Failed to set session unmute",
+					"error", err)
+
+				return fmt.Errorf("adjust session, can't unmute: %w", err)
+			}
+		}
+	}
+
 	if err := s.volume.SetMasterVolume(v, s.eventCtx); err != nil {
 		s.logger.Warnw("Failed to set session volume", "error", err)
 		return fmt.Errorf("adjust session volume: %w", err)
@@ -168,6 +197,35 @@ func (s *masterSession) SetVolume(v float32) error {
 	if s.stale {
 		s.logger.Warnw("Session expired because default device has changed, triggering session refresh")
 		return errRefreshSessions
+	}
+
+	if v == 0 {
+		if err := s.volume.SetMute(true, s.eventCtx); err != nil {
+			s.logger.Warnw("Failed to set session mute",
+				"error", err,
+				"volume", 0)
+
+			return fmt.Errorf("adjust session, can't mute: %w", err)
+		}
+
+		return nil
+	} else {
+		var isMuted bool
+
+		if err := s.volume.GetMute(&isMuted); err != nil {
+			s.logger.Warnw("Can't resolve get mute")
+
+			return fmt.Errorf("adjust session, can't get mute: %w", err)
+		}
+
+		if isMuted {
+			if err := s.volume.SetMute(false, s.eventCtx); err != nil {
+				s.logger.Warnw("Failed to set session unmute",
+					"error", err)
+
+				return fmt.Errorf("adjust session, can't unmute: %w", err)
+			}
+		}
 	}
 
 	if err := s.volume.SetMasterVolumeLevelScalar(v, s.eventCtx); err != nil {
